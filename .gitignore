@@ -1,0 +1,38 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Model artifacts (can be regenerated)
+models/*.joblib
+models/*.pkl
+
+# Reports (generated)
+reports/*.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local configuration
+.env
+*.local.py
