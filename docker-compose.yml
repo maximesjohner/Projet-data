@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  hospital-dss:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hospital-dss
+    ports:
+      - "8501:8501"
+    volumes:
+      # Persist generated data and models
+      - ./data/processed:/app/data/processed
+      - ./data/reference:/app/data/reference
+      - ./models:/app/models
+      - ./reports:/app/reports
+    environment:
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: Run data generation separately
+  generate-data:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hospital-dss-generator
+    volumes:
+      - ./data/processed:/app/data/processed
+      - ./data/reference:/app/data/reference
+      - ./reports:/app/reports
+    command: python scripts/generate_dataset.py
+    profiles:
+      - tools
+
+  # Optional: Run tests
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hospital-dss-test
+    command: pytest tests/ -v
+    profiles:
+      - tools
+
+  # Optional: Run health check
+  health-check:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hospital-dss-health
+    volumes:
+      - ./data/processed:/app/data/processed
+      - ./models:/app/models
+    command: python scripts/health_check.py
+    profiles:
+      - tools

@@ -14,8 +14,9 @@ from config.generator import GeneratorConfig, DEFAULT_CONFIG
 class HospitalDataGenerator:
     """Generator for synthetic hospital data."""
 
-    def __init__(self, config: Optional[GeneratorConfig] = None):
+    def __init__(self, config: Optional[GeneratorConfig] = None, hospital_id: Optional[str] = None):
         self.config = config or DEFAULT_CONFIG
+        self.hospital_id = hospital_id
         self.rng = np.random.default_rng(self.config.seed)
         self.reference_stats = self._load_reference_stats()
 
@@ -239,8 +240,11 @@ class HospitalDataGenerator:
     def _format_output(self, df: pd.DataFrame) -> pd.DataFrame:
         df["date"] = df["date"].apply(lambda d: d.strftime("%d/%m/%Y"))
 
+        if self.hospital_id:
+            df["hospital_id"] = self.hospital_id
+
         columns_order = [
-            "date", "dow", "month", "day_of_week", "season", "temperature_c",
+            "hospital_id", "date", "dow", "month", "day_of_week", "season", "temperature_c",
             "heatwave_event", "epidemic_level", "strike_level", "accident_event",
             "total_admissions", "emergency_admissions", "pediatric_admissions", "icu_admissions",
             "available_beds", "available_staff", "medical_stock_level_pct", "waiting_time_avg_min",
@@ -253,7 +257,7 @@ class HospitalDataGenerator:
         return df[[c for c in columns_order if c in df.columns]]
 
 
-def generate_dataset(seed: int = 42, start_date: Optional[date] = None, end_date: Optional[date] = None, output_path: Optional[str] = None) -> pd.DataFrame:
+def generate_dataset(seed: int = 42, start_date: Optional[date] = None, end_date: Optional[date] = None, output_path: Optional[str] = None, hospital_id: Optional[str] = None) -> pd.DataFrame:
     config = GeneratorConfig(seed=seed)
     if start_date:
         config.start_date = start_date
@@ -262,5 +266,5 @@ def generate_dataset(seed: int = 42, start_date: Optional[date] = None, end_date
     if output_path:
         config.output_path = output_path
 
-    generator = HospitalDataGenerator(config)
+    generator = HospitalDataGenerator(config, hospital_id=hospital_id)
     return generator.generate()

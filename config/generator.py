@@ -1,9 +1,35 @@
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Dict, List
 from datetime import date
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent
+
+REFERENCE_DIR = PROJECT_ROOT / "data" / "reference"
+
+HOSPITALS = [
+    {"id": "PITIE", "name": "Pitié-Salpêtrière", "file": "donnees_hopital_reference.csv"},
+    {"id": "HEGP", "name": "Hôpital Européen Georges Pompidou", "file": "donnees_hopital_reference_01_HEGP.csv"},
+    {"id": "STLOUIS", "name": "Hôpital Saint-Louis", "file": "donnees_hopital_reference_02_STLOUIS.csv"},
+    {"id": "BICHAT", "name": "Hôpital Bichat", "file": "donnees_hopital_reference_03_BICHAT.csv"},
+    {"id": "COCHIN", "name": "Hôpital Cochin", "file": "donnees_hopital_reference_04_COCHIN.csv"},
+    {"id": "NECKER", "name": "Hôpital Necker", "file": "donnees_hopital_reference_05_NECKER.csv"},
+    {"id": "LARIBO", "name": "Hôpital Lariboisière", "file": "donnees_hopital_reference_06_LARIBO.csv"},
+    {"id": "BEAUJON", "name": "Hôpital Beaujon", "file": "donnees_hopital_reference_07_BEAUJON.csv"},
+    {"id": "CHUBDX", "name": "CHU de Bordeaux", "file": "donnees_hopital_reference_08_CHUBDX.csv"},
+    {"id": "CHULYON", "name": "CHU de Lyon", "file": "donnees_hopital_reference_09_CHULYON.csv"},
+    {"id": "CHULILLE", "name": "CHU de Lille", "file": "donnees_hopital_reference_10_CHULILLE.csv"},
+]
+
+
+def get_available_hospitals() -> List[Dict]:
+    """Return list of hospitals with existing reference files."""
+    available = []
+    for h in HOSPITALS:
+        ref_path = REFERENCE_DIR / h["file"]
+        if ref_path.exists():
+            available.append(h)
+    return available
 
 
 @dataclass

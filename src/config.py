@@ -29,7 +29,7 @@ class ModelConfig:
     n_estimators: int = 300
     model_save_path: str = str(PROJECT_ROOT / "models")
     feature_columns: List[str] = field(default_factory=lambda: [
-        "epidemic_level", "temperature_c", "heatwave_event", "strike_level",
+        "hospital_id", "epidemic_level", "temperature_c", "heatwave_event", "strike_level",
         "staff_absence_rate", "available_staff", "available_beds",
         "scheduled_surgeries", "medical_stock_level_pct", "accident_event",
         "external_alert_level", "month", "dow", "is_weekend", "season", "day_of_week",

@@ -107,6 +107,7 @@ with st.spinner("Génération des recommandations..."):
 
         baseline_params = train_baseline(df)
         baseline_df = generate_future_dates(forecast_start_ts, horizon)
+        baseline_df["hospital_id"] = "PITIE"
         baseline_df["predicted_admissions"] = predict_baseline(baseline_params, baseline_df)
 
     scenario_df = apply_scenario(baseline_df, scenario_params)

@@ -2,7 +2,20 @@
 
 Interactive dashboard for hospital capacity planning, forecasting, and scenario analysis.
 
+[![CI Pipeline](https://github.com/YOUR_USERNAME/Projet-data/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/Projet-data/actions/workflows/ci.yml)
+
 ## Quick Start
+
+### Option 1: Docker (Recommended)
+
+```bash
+# Run with Docker Compose
+docker-compose up --build
+
+# Access the app at http://localhost:8501
+```
+
+### Option 2: Local Installation
 
 ```bash
 # 1. Install dependencies
@@ -52,11 +65,14 @@ python run.py generate --end-date 2030-12-31        # Custom end date
 │   ├── reco/              # Recommendations
 │   └── generator/         # Synthetic data generation
 ├── data/
-│   ├── reference/         # Calibration data
+│   ├── reference/         # Calibration data (11 hospitals)
 │   └── processed/         # Generated data (used by app)
 ├── config/                # Configuration
 ├── scripts/               # CLI scripts
 ├── tests/                 # Pytest tests
+├── .github/workflows/     # CI/CD pipeline
+├── Dockerfile             # Docker image definition
+├── docker-compose.yml     # Docker orchestration
 └── run.py                 # Main CLI entry point
 ```
 
@@ -78,6 +94,57 @@ Reference file (`data/reference/`) provides calibration statistics.
 - **Features**: Temporal + operational (no data leakage)
 - **Validation**: Time-based split (80/20)
 - **Performance**: R² ≈ 0.82
+
+## Docker
+
+### Running with Docker Compose
+
+```bash
+# Build and start the application
+docker-compose up --build
+
+# Run in detached mode
+docker-compose up -d --build
+
+# Stop the application
+docker-compose down
+
+# View logs
+docker-compose logs -f hospital-dss
+```
+
+### Docker Utilities
+
+```bash
+# Generate fresh data
+docker-compose --profile tools run generate-data
+
+# Run tests in container
+docker-compose --profile tools run test
+
+# Run health check
+docker-compose --profile tools run health-check
+```
+
+### Pull from GitHub Container Registry
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/YOUR_USERNAME/projet-data:latest
+
+# Run directly
+docker run -p 8501:8501 ghcr.io/YOUR_USERNAME/projet-data:latest
+```
+
+### Build Manually
+
+```bash
+# Build the image
+docker build -t hospital-dss .
+
+# Run the container
+docker run -p 8501:8501 hospital-dss
+```
 
 ## Requirements
 

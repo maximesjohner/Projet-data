@@ -120,6 +120,7 @@ with tab1:
         else:
             from src.models.predict import generate_future_dates
             forecast_df = generate_future_dates(forecast_start_ts, horizon)
+            forecast_df["hospital_id"] = "PITIE"
             forecast_df["predicted_admissions"] = predict_baseline(baseline_params, forecast_df)
             forecast_col = "predicted_admissions"
 

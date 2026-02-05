@@ -73,10 +73,12 @@ def generate_future_dates(start_date: pd.Timestamp, n_days: int = 30) -> pd.Data
     return df
 
 
-def forecast(model: Union[Pipeline, str], start_date: pd.Timestamp, n_days: int = 30, scenario_features: Optional[Dict[str, Any]] = None) -> pd.DataFrame:
-    logger.info(f"Génération des prévisions: {n_days} jours à partir du {start_date.strftime('%Y-%m-%d')}")
+def forecast(model: Union[Pipeline, str], start_date: pd.Timestamp, n_days: int = 30, scenario_features: Optional[Dict[str, Any]] = None, hospital_id: str = "PITIE") -> pd.DataFrame:
+    logger.info(f"Génération des prévisions: {n_days} jours à partir du {start_date.strftime('%Y-%m-%d')} (hôpital: {hospital_id})")
 
     future_df = generate_future_dates(start_date, n_days)
+
+    future_df["hospital_id"] = hospital_id
 
     month_temps = {1: 4, 2: 5, 3: 9, 4: 13, 5: 17, 6: 21, 7: 24, 8: 23, 9: 19, 10: 13, 11: 8, 12: 5}
     future_df["temperature_c"] = future_df["month"].map(month_temps).astype(float)
