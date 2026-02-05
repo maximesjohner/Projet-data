@@ -30,7 +30,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p data/processed data/reference models reports
+RUN mkdir -p data/processed/training data/reference models reports
 
 # Generate data if not present (will use existing if available)
 RUN python scripts/generate_dataset.py --no-validate || true

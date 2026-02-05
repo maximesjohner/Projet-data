@@ -2,6 +2,12 @@
 """
 Generate synthetic hospital datasets for all hospitals.
 
+Data structure:
+  - data/processed/donnees_hopital.csv         -> Pitié-Salpêtrière only (for frontend)
+  - data/processed/training/donnees_PITIE.csv  -> Pitié-Salpêtrière (for training)
+  - data/processed/training/donnees_HEGP.csv   -> Other hospitals (for training)
+  - ...
+
 Usage:
     python scripts/generate_dataset.py
     python scripts/generate_dataset.py --seed 123 --end-date 2025-12-31
@@ -26,7 +32,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")
     parser.add_argument("--start-date", type=str, default="2012-01-01", help="Start date YYYY-MM-DD")
     parser.add_argument("--end-date", type=str, default="2025-12-31", help="End date YYYY-MM-DD")
-    parser.add_argument("--output", type=str, default=None, help="Output path (default: data/processed/donnees_hopital.csv)")
+    parser.add_argument("--output", type=str, default=None, help="Output path for main file")
     parser.add_argument("--no-validate", action="store_true", help="Skip validation")
     parser.add_argument("--report", type=str, default="reports/generation_report.md", help="Report path")
 
@@ -59,6 +65,11 @@ def main():
     print(f"  Base seed: {args.seed}")
     print(f"  Period: {start_date} to {end_date}")
 
+    # Create training directory
+    training_dir = PROJECT_ROOT / "data" / "processed" / "training"
+    training_dir.mkdir(parents=True, exist_ok=True)
+
+    pitie_df = None
     all_datasets = []
 
     for i, hospital in enumerate(hospitals):
@@ -80,26 +91,47 @@ def main():
         df = generator.generate()
 
         print(f"  Generated {len(df)} rows")
+
+        # Save individual hospital file for training
+        hospital_file = training_dir / f"donnees_{hospital['id']}.csv"
+        df.to_csv(hospital_file, sep=";", index=False)
+        print(f"  Saved to: {hospital_file.name}")
+
         all_datasets.append(df)
 
-    print(f"\n{'=' * 60}")
-    print("COMBINING DATASETS")
-    print("=" * 60)
+        # Keep Pitié-Salpêtrière for main frontend file
+        if hospital["id"] == "PITIE":
+            pitie_df = df.copy()
 
-    combined_df = pd.concat(all_datasets, ignore_index=True)
-    print(f"Combined dataset: {len(combined_df)} rows, {len(combined_df.columns)} columns")
-    print(f"Hospitals: {combined_df['hospital_id'].nunique()}")
+    # Save Pitié-Salpêtrière as main file (for frontend)
+    print(f"\n{'=' * 60}")
+    print("SAVING FRONTEND DATA (Pitié-Salpêtrière only)")
+    print("=" * 60)
 
     output_path = Path(args.output) if args.output else PROJECT_ROOT / "data" / "processed" / "donnees_hopital.csv"
     if not output_path.is_absolute():
         output_path = PROJECT_ROOT / output_path
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    combined_df.to_csv(output_path, sep=";", index=False)
-    print(f"Saved combined data to: {output_path}")
 
-    print("\n--- Sample (first 5 rows) ---")
-    sample_cols = ["hospital_id", "date", "total_admissions", "emergency_admissions", "available_beds"]
-    print(combined_df[sample_cols].head().to_string())
+    # Remove hospital_id column for frontend (not needed, single hospital)
+    pitie_frontend = pitie_df.drop(columns=["hospital_id"], errors="ignore")
+    pitie_frontend.to_csv(output_path, sep=";", index=False)
+    print(f"Saved Pitié-Salpêtrière data to: {output_path}")
+    print(f"  Rows: {len(pitie_frontend)}, Columns: {len(pitie_frontend.columns)}")
+
+    # Summary
+    print(f"\n{'=' * 60}")
+    print("SUMMARY")
+    print("=" * 60)
+
+    print("\n--- Frontend data (donnees_hopital.csv) ---")
+    print(f"Hospital: Pitié-Salpêtrière")
+    print(f"Rows: {len(pitie_frontend)}")
+
+    print("\n--- Training data (data/processed/training/) ---")
+    combined_df = pd.concat(all_datasets, ignore_index=True)
+    print(f"Total rows: {len(combined_df):,}")
+    print(f"Hospitals: {combined_df['hospital_id'].nunique()}")
 
     print("\n--- Per-hospital summary ---")
     summary = combined_df.groupby("hospital_id").agg({
@@ -111,12 +143,11 @@ def main():
 
     if not args.no_validate:
         print("\n" + "=" * 60)
-        print("VALIDATION (first hospital - PITIE)")
+        print("VALIDATION (Pitié-Salpêtrière)")
         print("=" * 60)
 
-        first_hospital_df = all_datasets[0]
         reference_df = load_reference(hospitals[0]["file"])
-        report = validate_dataset(first_hospital_df, reference_df=reference_df, expected_end_year=end_date.year)
+        report = validate_dataset(pitie_df, reference_df=reference_df, expected_end_year=end_date.year)
         print_validation_report(report)
 
         report_path = PROJECT_ROOT / args.report
@@ -124,9 +155,9 @@ def main():
         print(f"\nReport saved to: {report_path}")
 
     print("\n" + "=" * 60)
-    print(f"DONE - Generated data for {len(hospitals)} hospitals")
-    print(f"Total records: {len(combined_df):,}")
-    print("Streamlit will now use this combined data")
+    print(f"DONE")
+    print(f"  Frontend: donnees_hopital.csv (Pitié only)")
+    print(f"  Training: {len(hospitals)} files in data/processed/training/")
     print("=" * 60)
 
 

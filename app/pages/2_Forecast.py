@@ -13,7 +13,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.data import load_data, preprocess_data
+from src.data import load_data, load_training_data, preprocess_data
 from src.features import build_features, get_feature_columns
 from src.models.train import train_model, train_baseline, evaluate_model, save_model, save_baseline
 from src.models.predict import predict, predict_baseline, load_model, load_baseline, forecast
@@ -27,16 +27,27 @@ st.markdown("Prédisez les admissions hospitalières futures grâce au machine l
 
 @st.cache_data
 def get_data():
+    """Load Pitié-Salpêtrière data for frontend display."""
     df = load_data()
     df = preprocess_data(df)
     df = build_features(df)
     return df
 
 
+@st.cache_data
+def get_training_data():
+    """Load all hospital data for model training."""
+    df = load_training_data()
+    df = preprocess_data(df)
+    df = build_features(df)
+    return df
+
+
 @st.cache_resource
-def get_trained_model(_df):
+def get_trained_model(_training_df):
+    """Train model on all hospital data."""
     from src.features.build_features import prepare_model_data
-    train_df, test_df = get_train_test_split(_df)
+    train_df, test_df = get_train_test_split(_training_df)
     X_train, y_train = prepare_model_data(train_df)
     X_test, y_test = prepare_model_data(test_df)
 
@@ -101,7 +112,9 @@ with tab1:
     with st.spinner("Préparation du modèle..."):
         try:
             if model_choice == "Modèle Final (ML)":
-                model, metrics, test_df = get_trained_model(df)
+                # Load all hospital data for training
+                training_df = get_training_data()
+                model, metrics, test_df = get_trained_model(training_df)
                 baseline_params = get_baseline_params(df)
             else:
                 baseline_params = get_baseline_params(df)

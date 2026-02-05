@@ -53,13 +53,13 @@ def check_features():
 
 @check("Model Training")
 def check_model_training():
-    from src.data import load_data, preprocess_data
+    from src.data import load_training_data, preprocess_data
     from src.data.preprocess import get_train_test_split
     from src.features import build_features
     from src.features.build_features import prepare_model_data
     from src.models.train import train_model, evaluate_model
 
-    df = load_data()
+    df = load_training_data()
     df = preprocess_data(df)
     df = build_features(df)
     train_df, test_df = get_train_test_split(df)

@@ -66,7 +66,9 @@ python run.py generate --end-date 2030-12-31        # Custom end date
 │   └── generator/         # Synthetic data generation
 ├── data/
 │   ├── reference/         # Calibration data (11 hospitals)
-│   └── processed/         # Generated data (used by app)
+│   └── processed/
+│       ├── donnees_hopital.csv  # Frontend (Pitié only)
+│       └── training/            # Model training (all hospitals)
 ├── config/                # Configuration
 ├── scripts/               # CLI scripts
 ├── tests/                 # Pytest tests
@@ -86,14 +88,31 @@ The generator creates realistic synthetic hospital data with:
 - **Correlations**: Wait time increases with load, severity with epidemics
 - **Constraints**: No negative values, valid rates
 
-Reference file (`data/reference/`) provides calibration statistics.
+### Data Structure
+
+```
+data/
+├── reference/                    # Calibration data (11 hospitals)
+│   ├── donnees_hopital_reference.csv
+│   └── donnees_hopital_reference_*_*.csv
+└── processed/
+    ├── donnees_hopital.csv       # Frontend data (Pitié-Salpêtrière only)
+    └── training/                 # Model training data (all hospitals)
+        ├── donnees_PITIE.csv
+        ├── donnees_HEGP.csv
+        └── ...
+```
+
+- **Frontend**: Uses `donnees_hopital.csv` (single hospital)
+- **Model training**: Uses all files in `training/` (11 hospitals, ~56k rows)
 
 ## Model
 
 - **Algorithm**: Random Forest (300 trees)
 - **Features**: Temporal + operational (no data leakage)
+- **Training data**: 11 hospitals (~56k rows)
 - **Validation**: Time-based split (80/20)
-- **Performance**: R² ≈ 0.82
+- **Performance**: R² ≈ 0.89
 
 ## Docker
 
