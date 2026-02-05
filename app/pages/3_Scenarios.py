@@ -255,9 +255,11 @@ with tab1:
         ))
 
     if shock_spike > 0 and shock_day is not None:
-        shock_date = scenario_df["date"].iloc[shock_day] if shock_day < len(scenario_df) else None
-        if shock_date is not None:
-            fig.add_vline(x=shock_date, line_dash="dash", line_color="purple",
+        if shock_day < len(scenario_df):
+            shock_date = scenario_df["date"].iloc[shock_day]
+            # Convert to string for Plotly compatibility
+            shock_date_str = pd.Timestamp(shock_date).strftime("%Y-%m-%d")
+            fig.add_vline(x=shock_date_str, line_dash="dash", line_color="purple",
                           annotation_text=f"Choc J+{shock_day}")
 
     fig.update_layout(

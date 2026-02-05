@@ -90,16 +90,22 @@ if "accident_event" in filtered_df.columns:
     event_filters["accident"] = st.sidebar.checkbox("Accident majeur", value=False)
 
 if any(event_filters.values()):
-    event_mask = pd.Series([True] * len(filtered_df), index=filtered_df.index)
+    # Use OR logic: show days with ANY of the selected events
+    event_mask = pd.Series([False] * len(filtered_df), index=filtered_df.index)
     if event_filters.get("epidemic"):
-        event_mask &= filtered_df["epidemic_level"] > 0
+        event_mask |= filtered_df["epidemic_level"] > 0
     if event_filters.get("heatwave"):
-        event_mask &= filtered_df["heatwave_event"] == 1
+        event_mask |= filtered_df["heatwave_event"] == 1
     if event_filters.get("strike"):
-        event_mask &= filtered_df["strike_level"] > 0
+        event_mask |= filtered_df["strike_level"] > 0
     if event_filters.get("accident"):
-        event_mask &= filtered_df["accident_event"] == 1
+        event_mask |= filtered_df["accident_event"] == 1
     filtered_df = filtered_df[event_mask]
+
+# Handle empty filtered data
+if len(filtered_df) == 0:
+    st.warning("Aucune donnée ne correspond aux filtres sélectionnés.")
+    st.stop()
 
 st.sidebar.divider()
 st.sidebar.info(f"Affichage de {len(filtered_df):,} enregistrements")
