@@ -1,4 +1,3 @@
-# Hospital Decision Support System - Dependencies
 # Python 3.9+
 
 # Data processing
