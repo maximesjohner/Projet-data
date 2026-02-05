@@ -7,7 +7,7 @@ import sys
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.data.load import load_data
+from src.data.load import load_data, DataNotFoundError
 from src.config import DATA_CONFIG
 
 # Path to the dummy data created for tests
@@ -35,7 +35,7 @@ def test_load_data_no_file():
     """
     Tests that FileNotFoundError is raised for a non-existent file.
     """
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(DataNotFoundError):
         load_data(path="non_existent_file.csv")
 
 def test_load_data_no_date_parsing():

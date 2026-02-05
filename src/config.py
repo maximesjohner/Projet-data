@@ -6,20 +6,14 @@ import os
 
 PROJECT_ROOT = Path(__file__).parent.parent.absolute()
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s - %(message)s',
-    datefmt='%H:%M:%S'
-)
+logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 logger = logging.getLogger("hospital_dss")
 
 
 @dataclass
 class DataConfig:
     data_paths: List[str] = field(default_factory=lambda: [
-        str(PROJECT_ROOT / "data" / "raw" / "donnees_hopital.csv"),
-        str(PROJECT_ROOT / "data" / "donnees_hopital.csv"),
-        str(PROJECT_ROOT / "donnees_hopital.csv"),
+        str(PROJECT_ROOT / "data" / "processed" / "donnees_hopital.csv"),
     ])
     csv_separator: str = ";"
     encoding: str = "utf-8"
@@ -44,13 +38,12 @@ class ModelConfig:
 
 @dataclass
 class CapacityConfig:
-    total_beds: int = 1500
-    total_staff: int = 430
+    total_beds: int = 1450
+    total_staff: int = 425
     normal_admission_capacity: int = 450
     critical_occupancy_threshold: float = 0.85
     warning_occupancy_threshold: float = 0.75
     min_stock_level: float = 50.0
-    staff_patient_ratio: float = 0.12
 
 
 @dataclass
@@ -73,3 +66,7 @@ def get_available_data_path() -> Optional[str]:
         if os.path.exists(path):
             return path
     return None
+
+
+def check_data_exists() -> bool:
+    return get_available_data_path() is not None

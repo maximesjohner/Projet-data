@@ -1,29 +1,17 @@
-
 import pandas as pd
 import numpy as np
 import pytest
 from pathlib import Path
 import sys
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.features.build_features import (
-    create_interaction_features,
-    create_lag_features,
-    create_rolling_features,
-    get_feature_columns,
-    prepare_model_data,
-    build_features,
-)
+from src.features.build_features import get_feature_columns, prepare_model_data, build_features
 from src.config import MODEL_CONFIG
 
+
 @pytest.fixture
-def sample_preprocessed_df():
-    """
-    Provides a sample preprocessed DataFrame for feature engineering tests.
-    It simulates a time series.
-    """
+def sample_df():
     data = {
         "date": pd.to_datetime(pd.date_range(start="2023-01-01", periods=20)),
         "total_admissions": np.arange(100, 120),
@@ -35,81 +23,61 @@ def sample_preprocessed_df():
         "dow": pd.date_range(start="2023-01-01", periods=20).dayofweek,
         "is_weekend": (pd.date_range(start="2023-01-01", periods=20).dayofweek >= 5).astype(int),
     }
-    # Add other feature columns required by config with default values
     for col in MODEL_CONFIG.feature_columns:
         if col not in data:
             data[col] = np.random.rand(20) * 10
-
     return pd.DataFrame(data)
 
 
-def test_create_interaction_features(sample_preprocessed_df):
-    """
-    Tests the creation of interaction features.
-    """
-    df = create_interaction_features(sample_preprocessed_df)
-    
+def test_get_feature_columns_from_config():
+    cols = get_feature_columns()
+    assert isinstance(cols, list)
+    assert len(cols) > 0
+    assert "epidemic_level" in cols
+
+
+def test_get_feature_columns_filters_missing(sample_df):
+    df_subset = sample_df[["date", "total_admissions", "epidemic_level"]]
+    cols = get_feature_columns(df_subset)
+    assert "epidemic_level" in cols
+    assert "temperature_c" not in cols
+
+
+def test_build_features_adds_columns(sample_df):
+    df = build_features(sample_df)
+    assert "dow" in df.columns
+    assert "month" in df.columns
+    assert "is_weekend" in df.columns
+
+
+def test_build_features_creates_effective_staff(sample_df):
+    df = build_features(sample_df)
     assert "effective_staff" in df.columns
+    expected = sample_df.loc[0, "available_staff"] * (1 - sample_df.loc[0, "staff_absence_rate"])
+    assert np.isclose(df.loc[0, "effective_staff"], expected)
+
+
+def test_build_features_creates_stress_indicator(sample_df):
+    df = build_features(sample_df)
     assert "stress_indicator" in df.columns
-    
-    # Check a value
-    expected_staff = sample_preprocessed_df.loc[0, "available_staff"] * (1 - sample_preprocessed_df.loc[0, "staff_absence_rate"])
-    assert np.isclose(df.loc[0, "effective_staff"], expected_staff)
+    expected = sample_df.loc[0, "epidemic_level"] * sample_df.loc[0, "staff_absence_rate"]
+    assert np.isclose(df.loc[0, "stress_indicator"], expected)
 
-def test_create_lag_features(sample_preprocessed_df):
-    """
-    Tests the creation of lag features.
-    """
-    lags = [1, 7]
-    df = create_lag_features(sample_preprocessed_df, lags=lags)
-    
-    # Check that columns are created
-    for lag in lags:
-        assert f"total_admissions_lag_{lag}" in df.columns
-    
-    # Check value: lag 1 of row 1 should be value of row 0
-    assert df.loc[1, "total_admissions_lag_1"] == sample_preprocessed_df.loc[0, "total_admissions"]
-    
-    # Check for NaNs at the beginning
-    assert pd.isna(df.loc[0, "total_admissions_lag_1"])
-    assert pd.isna(df.loc[6, "total_admissions_lag_7"])
-    assert not pd.isna(df.loc[7, "total_admissions_lag_7"])
 
-def test_create_rolling_features(sample_preprocessed_df):
-    """
-    Tests the creation of rolling statistical features.
-    """
-    windows = [7, 14]
-    df = create_rolling_features(sample_preprocessed_df, windows=windows)
-    
-    # Check that columns are created
-    for window in windows:
-        assert f"total_admissions_rolling_mean_{window}" in df.columns
-        assert f"total_admissions_rolling_std_{window}" in df.columns
-        
-    # Check for NaNs at the beginning
-    assert pd.isna(df.loc[5, "total_admissions_rolling_mean_7"])
-    assert not pd.isna(df.loc[6, "total_admissions_rolling_mean_7"])
-    
-    # Check calculation
-    expected_mean = sample_preprocessed_df["total_admissions"].iloc[:7].mean()
-    assert np.isclose(df.loc[6, "total_admissions_rolling_mean_7"], expected_mean)
-    
-def test_prepare_model_data(sample_preprocessed_df):
-    """
-    Tests the final preparation of data for the model.
-    """
-    df = build_features(sample_preprocessed_df)
-    
+def test_prepare_model_data(sample_df):
+    df = build_features(sample_df)
     X, y = prepare_model_data(df, target_col="total_admissions")
-    
-    # 1. Check types
+
     assert isinstance(X, pd.DataFrame)
     assert isinstance(y, pd.Series)
-    
-    # 2. Check that target is not in features
     assert "total_admissions" not in X.columns
-    
-    # 3. Check that only valid feature columns are present
-    expected_cols = get_feature_columns(df)
-    assert X.columns.tolist().sort() == expected_cols.sort()
+    assert len(X) == len(y)
+
+
+def test_prepare_model_data_returns_none_if_no_target(sample_df):
+    df = sample_df.drop(columns=["total_admissions"])
+    df = build_features(df)
+    X, y = prepare_model_data(df, target_col="total_admissions")
+
+    assert isinstance(X, pd.DataFrame)
+    assert y is None

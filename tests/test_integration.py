@@ -7,7 +7,7 @@ import sys
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.data.load import load_data
+from src.data.load import load_data, DataNotFoundError
 from src.data.preprocess import preprocess_data
 from src.features.build_features import build_features, prepare_model_data
 from src.config import MODEL_CONFIG
@@ -23,7 +23,7 @@ def test_full_data_processing_pipeline():
     # 1. Load data
     try:
         raw_df = load_data(path=DUMMY_DATA_PATH)
-    except FileNotFoundError:
+    except (FileNotFoundError, DataNotFoundError):
         pytest.fail(f"Test setup error: Dummy data file not found at {DUMMY_DATA_PATH}")
     
     # Augment the dummy data to have columns required for feature building
@@ -50,7 +50,7 @@ def test_full_data_processing_pipeline():
     # 3. Build features
     # Not including lags or rolling features in this basic integration test
     # as they introduce NaNs which would need to be handled.
-    featured_df = build_features(preprocessed_df, include_lags=False, include_rolling=False)
+    featured_df = build_features(preprocessed_df)
 
     # 4. Prepare model data
     X, y = prepare_model_data(featured_df, target_col="total_admissions")

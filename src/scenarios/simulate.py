@@ -6,8 +6,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
-from src.config import SCENARIO_DEFAULTS, CAPACITY_CONFIG, logger
+from src.config import CAPACITY_CONFIG, logger
 
 
 @dataclass
@@ -22,55 +21,32 @@ class ScenarioParams:
 
     @classmethod
     def from_dict(cls, params: Dict[str, Any]) -> "ScenarioParams":
-        return cls(
-            epidemic_intensity=params.get("epidemic_intensity", 0.0),
-            staffing_reduction=params.get("staffing_reduction", 0.0),
-            seasonal_multiplier=params.get("seasonal_multiplier", 1.0),
-            shock_day_spike=params.get("shock_day_spike", 0.0),
-            shock_day_index=params.get("shock_day_index"),
-            beds_reduction=params.get("beds_reduction", 0.0),
-            stock_reduction=params.get("stock_reduction", 0.0)
-        )
+        return cls(**{k: params.get(k, getattr(cls, k, 0)) for k in cls.__dataclass_fields__})
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            "epidemic_intensity": self.epidemic_intensity,
-            "staffing_reduction": self.staffing_reduction,
-            "seasonal_multiplier": self.seasonal_multiplier,
-            "shock_day_spike": self.shock_day_spike,
-            "shock_day_index": self.shock_day_index,
-            "beds_reduction": self.beds_reduction,
-            "stock_reduction": self.stock_reduction
-        }
+        return {k: getattr(self, k) for k in self.__dataclass_fields__}
 
 
 def apply_scenario(forecast_df: pd.DataFrame, scenario: ScenarioParams, prediction_col: str = "predicted_admissions") -> pd.DataFrame:
-    logger.info(f"Application du scénario: épidémie={scenario.epidemic_intensity}%, personnel={scenario.staffing_reduction}%")
+    logger.info(f"Application scénario: épidémie={scenario.epidemic_intensity}%, personnel={scenario.staffing_reduction}%")
 
     df = forecast_df.copy()
     baseline = df[prediction_col].copy()
 
     epidemic_factor = 1 + (scenario.epidemic_intensity / 100)
-    seasonal_factor = scenario.seasonal_multiplier
-    df["scenario_admissions"] = baseline * epidemic_factor * seasonal_factor
+    df["scenario_admissions"] = baseline * epidemic_factor * scenario.seasonal_multiplier
 
     if scenario.shock_day_index is not None and scenario.shock_day_spike > 0:
         if 0 <= scenario.shock_day_index < len(df):
-            shock_factor = 1 + (scenario.shock_day_spike / 100)
-            df.loc[df.index[scenario.shock_day_index], "scenario_admissions"] *= shock_factor
+            df.loc[df.index[scenario.shock_day_index], "scenario_admissions"] *= (1 + scenario.shock_day_spike / 100)
 
-    base_staff = CAPACITY_CONFIG.total_staff
-    base_beds = CAPACITY_CONFIG.total_beds
-    base_capacity = CAPACITY_CONFIG.normal_admission_capacity
-
-    df["effective_staff"] = base_staff * (1 - scenario.staffing_reduction / 100)
-    df["effective_beds"] = base_beds * (1 - scenario.beds_reduction / 100)
+    df["effective_staff"] = CAPACITY_CONFIG.total_staff * (1 - scenario.staffing_reduction / 100)
+    df["effective_beds"] = CAPACITY_CONFIG.total_beds * (1 - scenario.beds_reduction / 100)
 
     staff_capacity = df["effective_staff"] * 3
     bed_capacity = df["effective_beds"] * CAPACITY_CONFIG.critical_occupancy_threshold
-
     df["effective_capacity"] = np.minimum(
-        base_capacity * (1 - scenario.staffing_reduction / 100),
+        CAPACITY_CONFIG.normal_admission_capacity * (1 - scenario.staffing_reduction / 100),
         np.minimum(staff_capacity, bed_capacity)
     )
 
@@ -82,21 +58,8 @@ def apply_scenario(forecast_df: pd.DataFrame, scenario: ScenarioParams, predicti
     df["baseline_admissions"] = baseline
     df["demand_change_pct"] = (df["scenario_admissions"] - baseline) / baseline * 100
 
-    logger.info(f"Scénario appliqué: admissions moyennes={df['scenario_admissions'].mean():.0f}/jour")
+    logger.info(f"Admissions moyennes: {df['scenario_admissions'].mean():.0f}/jour")
     return df
-
-
-def compare_scenarios(forecast_df: pd.DataFrame, scenarios: Dict[str, ScenarioParams], prediction_col: str = "predicted_admissions") -> pd.DataFrame:
-    result = forecast_df[["date", prediction_col]].copy()
-    result = result.rename(columns={prediction_col: "baseline"})
-
-    for name, scenario in scenarios.items():
-        scenario_df = apply_scenario(forecast_df, scenario, prediction_col)
-        result[f"{name}_admissions"] = scenario_df["scenario_admissions"]
-        result[f"{name}_gap"] = scenario_df["capacity_gap"]
-        result[f"{name}_occupancy"] = scenario_df["occupancy_rate"]
-
-    return result
 
 
 def create_preset_scenarios() -> Dict[str, ScenarioParams]:
@@ -115,12 +78,9 @@ def summarize_scenario_impact(scenario_df: pd.DataFrame) -> Dict[str, Any]:
     return {
         "avg_daily_admissions": scenario_df["scenario_admissions"].mean(),
         "max_daily_admissions": scenario_df["scenario_admissions"].max(),
-        "total_admissions": scenario_df["scenario_admissions"].sum(),
         "days_overcapacity": scenario_df["is_overcapacity"].sum(),
         "days_critical": scenario_df["is_critical"].sum(),
         "avg_capacity_gap": scenario_df["capacity_gap"].mean(),
         "max_capacity_gap": scenario_df["capacity_gap"].max(),
         "avg_occupancy_rate": scenario_df["occupancy_rate"].mean(),
-        "max_occupancy_rate": scenario_df["occupancy_rate"].max(),
-        "avg_demand_change_pct": scenario_df["demand_change_pct"].mean()
     }

@@ -52,11 +52,11 @@ class TestGenerateRecommendations:
     def test_normal_scenario_low_priority(self, normal_scenario):
         result = generate_recommendations(normal_scenario)
         priorities = result["priority"].unique()
-        assert "CRITICAL" not in priorities
+        assert "CRITIQUE" not in priorities
 
     def test_crisis_generates_critical(self, crisis_scenario):
         result = generate_recommendations(crisis_scenario)
-        assert "CRITICAL" in result["priority"].values
+        assert "CRITIQUE" in result["priority"].values
 
 
 class TestPriorityActions:
@@ -64,12 +64,12 @@ class TestPriorityActions:
         df = pd.DataFrame({
             "date": ["2024-01-01", "2024-01-02", "2024-01-03"],
             "action": ["A", "B", "C"],
-            "priority": ["CRITICAL", "HIGH", "LOW"],
+            "priority": ["CRITIQUE", "HAUTE", "BASSE"],
             "description": ["d1", "d2", "d3"]
         })
         result = get_priority_actions(df, max_priority=Priority.HIGH)
         assert len(result) == 2
-        assert "LOW" not in result["priority"].values
+        assert "BASSE" not in result["priority"].values
 
 
 class TestSummarize:
@@ -77,7 +77,7 @@ class TestSummarize:
         df = pd.DataFrame({
             "date": ["2024-01-01", "2024-01-02"],
             "action": ["A", "B"],
-            "priority": ["CRITICAL", "HIGH"],
+            "priority": ["CRITIQUE", "HAUTE"],
             "description": ["d1", "d2"]
         })
         result = summarize_recommendations(df)
@@ -89,7 +89,7 @@ class TestSummarize:
         df = pd.DataFrame({
             "date": ["2024-01-01", "2024-01-02", "2024-01-03"],
             "action": ["A", "B", "C"],
-            "priority": ["CRITICAL", "CRITICAL", "HIGH"],
+            "priority": ["CRITIQUE", "CRITIQUE", "HAUTE"],
             "description": ["d1", "d2", "d3"]
         })
         result = summarize_recommendations(df)
