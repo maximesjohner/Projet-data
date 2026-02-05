@@ -18,11 +18,14 @@ PROJECT_ROOT = Path(__file__).parent
 
 def run_app():
     """Run the Streamlit application."""
-    print("Starting Streamlit app...")
-    subprocess.run([
-        sys.executable, "-m", "streamlit", "run",
-        str(PROJECT_ROOT / "app" / "Home.py")
-    ])
+    try:
+        print("Starting Streamlit app...")
+        subprocess.run([
+            sys.executable, "-m", "streamlit", "run",
+            str(PROJECT_ROOT / "app" / "Home.py")
+        ])
+    except KeyboardInterrupt:
+        return
 
 
 def run_generate(args):

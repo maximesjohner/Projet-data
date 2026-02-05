@@ -295,7 +295,7 @@ with col2:
         season_labels = {"winter": "Hiver", "spring": "Printemps", "summer": "Été", "autumn": "Automne"}
         season_order = ["Hiver", "Printemps", "Été", "Automne"]
 
-        season_avg = filtered_df.groupby("season")["total_admissions"].mean().reset_index()
+        season_avg = filtered_df.groupby("season", observed=True)["total_admissions"].mean().reset_index()
         season_avg["saison"] = season_avg["season"].map(season_labels)
 
         fig_season = px.bar(

@@ -233,7 +233,7 @@ def color_priority(val):
     }
     return colors.get(val, "")
 
-styled_df = display_df.style.applymap(color_priority, subset=["priority"])
+styled_df = display_df.style.map(color_priority, subset=["priority"])
 st.dataframe(styled_df, width="stretch", height=400)
 
 col1, col2 = st.columns(2)
