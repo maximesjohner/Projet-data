@@ -2,7 +2,11 @@
 
 Interactive dashboard for hospital capacity planning, forecasting, and scenario analysis.
 
-[![CI Pipeline](https://github.com/YOUR_USERNAME/Projet-data/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/Projet-data/actions/workflows/ci.yml)
+[![CI Pipeline](https://github.com/maximesjohner/Projet-data/actions/workflows/ci.yml/badge.svg)](https://github.com/maximesjohner/Projet-data/actions/workflows/ci.yml)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Streamlit](https://img.shields.io/badge/streamlit-1.30+-red.svg)](https://streamlit.io/)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.3+-orange.svg)](https://scikit-learn.org/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
 
 ## Quick Start
 
